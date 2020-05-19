@@ -1,0 +1,3 @@
+alter table t1 add amount decimal(16,2)
+;
+
