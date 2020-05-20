@@ -52,7 +52,7 @@ const HomeScreen = (props) => {
     <Toolbar variant="dense">
       <Action
         title="Reload"
-        color="secondary"
+        color="primary"
         onClick={reloadModulesHandler}
         startIcon={<RefreshIcon />}
       />

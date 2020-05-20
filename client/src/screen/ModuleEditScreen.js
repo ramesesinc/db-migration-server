@@ -97,7 +97,7 @@ const ModuleEditScreen = (props) => {
       <Action
         title="Save"
         type="submit"
-        color="secondary"
+        color="primary"
         startIcon={<SaveIcon />}
       />
     </Toolbar>

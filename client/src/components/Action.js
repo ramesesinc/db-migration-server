@@ -15,7 +15,6 @@ const Action = (props) => {
     <Button
       className={classes.button}
       variant="contained"
-      color="primary"
       size="small"
       {...props}
     >

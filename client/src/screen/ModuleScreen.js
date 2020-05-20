@@ -65,7 +65,7 @@ const ModuleScreen = (props) => {
     <Toolbar variant="dense">
       <Action
         title="Edit"
-        color="secondary"
+        color="primary"
         onClick={editHandler}
         startIcon={<EditIcon />}
       />
@@ -87,7 +87,7 @@ const ModuleScreen = (props) => {
       <Toolbar>
         <Button
           variant="contained"
-          color="primary"
+          color="secondary"
           onClick={deployFilesHandler}
           disabled={deploying}
         >
