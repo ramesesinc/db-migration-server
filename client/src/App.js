@@ -11,7 +11,7 @@ function App() {
     <Router>
       <div>
         <Switch>
-          <Route exact path="/">
+          <Route exact path="/admin">
             <HomeScreen />
           </Route>
           <Route exact path="/modules/:moduleId">

@@ -12,7 +12,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 /* client */
-app.use(express.static(path.join(__dirname, "client/build")));
+app.use("/admin", express.static(path.join(__dirname, "client/build")));
 app.use(express.static("public"));
 
 /* migration routes */
