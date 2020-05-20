@@ -12,8 +12,12 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 /* client */
-app.use("/admin", express.static(path.join(__dirname, "client/build")));
+app.use(express.static(path.join(__dirname, "client", "build")));
 app.use(express.static("public"));
+
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(__dirname, "client", "build", "index.html"));
+});
 
 /* migration routes */
 const dbmigrations = require("./routes/dbmigrations");
