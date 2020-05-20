@@ -6,6 +6,7 @@ import EditIcon from "@material-ui/icons/Edit";
 import Toolbar from "@material-ui/core/Toolbar";
 
 import Action from "../components/Action";
+import Confirm from "../components/Confirm";
 import Content from "../components/Content";
 import Error from "../components/Error";
 import Label from "../components/Label";
@@ -22,6 +23,7 @@ const ModuleScreen = (props) => {
   const [moduleFiles, setModuleFiles] = useState([]);
   const [deploying, setDeploying] = useState(false);
   const [error, setError] = useState();
+  const [confirmDeploy, setConfirmDeploy] = useState(false);
 
   const loadFiles = useCallback(async () => {
     const moduleFiles = await api.getModuleFiles(module);
@@ -54,12 +56,22 @@ const ModuleScreen = (props) => {
   };
 
   const deployFilesHandler = () => {
+    setConfirmDeploy(false);
     setError(null);
     setDeploying(true);
     deployFiles().then(() => {
       setDeploying(false);
     });
   };
+  
+  const confirmDeployHandler = () => {
+    setConfirmDeploy(true);
+  };
+
+  const closeConfirmHandler = () => {
+    setConfirmDeploy(false);
+  }
+
 
   const ModuleActions = (
     <Toolbar variant="dense">
@@ -88,7 +100,7 @@ const ModuleScreen = (props) => {
         <Button
           variant="contained"
           color="secondary"
-          onClick={deployFilesHandler}
+          onClick={confirmDeployHandler}
           disabled={deploying}
         >
           Deploy Files
@@ -107,18 +119,20 @@ const ModuleScreen = (props) => {
         title={`Module: ${module.name}`}
         ActionComponents={ModuleActions}
       >
+        <Confirm 
+          open={confirmDeploy} 
+          title="Database Migration"
+          message="Deploy migration files?"
+          onCancel={closeConfirmHandler}
+          onOk={deployFilesHandler}
+        />
         <Container>
           <Label caption="Name:" width="300px" value={module.name} />
           <Label caption="Database:" value={module.dbname} />
           <Label caption="Conf (json):" value={conf} />
         </Container>
-        {/* <ModuleInfo module={module} /> */}
         {fileActions}
-        <ModuleFiles
-          files={moduleFiles}
-          onDeploy={deployFilesHandler}
-          deploying={deploying}
-        />
+        <ModuleFiles files={moduleFiles} />
       </Content>
     </Page>
   );

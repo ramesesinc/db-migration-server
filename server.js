@@ -12,16 +12,18 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 /* client */
-app.use(express.static(path.join(__dirname, "client", "build")));
+const clientBuildPath = path.join("client", "build")
+app.use(express.static(path.join(__dirname, clientBuildPath)));
 app.use(express.static("public"));
-
-app.get("/admin", (req, res) => {
-  res.sendFile(path.join(__dirname, "client", "build", "index.html"));
-});
 
 /* migration routes */
 const dbmigrations = require("./routes/dbmigrations");
 app.use("/dbmigrations", dbmigrations);
+
+app.get("/*", (req, res) => {
+  res.sendFile(path.join(__dirname, clientBuildPath, "index.html"));
+});
+
 
 const db = require("./api/rameses-db-migration");
 db.loadModules()
