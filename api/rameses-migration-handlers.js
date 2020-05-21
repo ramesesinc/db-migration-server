@@ -4,16 +4,12 @@ const mssql = require("mssql");
 const fetch = require("node-fetch");
 
 
-const  getUserConf = (module, file, confType) => {
-  let moduleConf;
-  if (file.submodule) {
-    moduleConf = module.conf[file.submodule] || {};
-  } else {
-    moduleConf = module.conf || {};
-  }
-  return moduleConf[confType] || {};
-};
-
+const getModuleConf = (module, file) => {
+  if (file.modulename) {
+    return file.conf;
+  } 
+  return module.conf;
+}
 
 /*=====================================
 * MYSQL Handler
@@ -22,34 +18,21 @@ const mysqlHandler = (function () {
   this.pool;
 
   const accept = async (module, file) => {
-    if (/.+\.mysql$/i.test(file.filename)) {
-      await createPool(module, file);
+    const conf = getModuleConf(module, file);
+    if (conf.dbtype !== "mysql") {
+      return false;
+    }
+
+    if (/.+\.sql$/i.test(file.filename)) {
+      await createPool(module, file, conf);
       return true;
     }
     return false;
   };
 
-  const createPool = async (module, file) => {
-    const defaultConf = {
-      connectionLimit: 10,
-      host: "localhost",
-      port: 3306,
-      user: "root",
-      password: "1234",
-      database: module.dbname,
-    };
-
-    const userConf = getUserConf(module, file, "mysql");
-    const conf = { ...defaultConf, ...userConf };
-
-    this.pool = mysql.createPool({
-      connectionLimit: conf.poolSize,
-      host: conf.host,
-      port: conf.port,
-      user: conf.user,
-      password: conf.password,
-      database: conf.database,
-    });
+  const createPool = async (module, file, conf) => {
+    conf.connectionLimit = conf.poolSize || 10;
+    this.pool = mysql.createPool(conf);
   };
 
   const close = async () => {
@@ -65,7 +48,7 @@ const mysqlHandler = (function () {
   const query = (sql, values = []) => {
     return new Promise((resolve, reject) => {
       this.pool.query(
-        { sql, values, timeout: this.timeout },
+        { sql, values, timeout: this.timeout},
         (error, results, fields) => {
           if (error) {
             reject(error);
@@ -108,27 +91,20 @@ const mysqlHandler = (function () {
 =====================================*/
 const mssqlHandler = (function () {
   const accept = async (module, file) => {
-    if (/.+\.mssql$/i.test(file.filename)) {
-      await createConnection(module, file);
+    const conf = getModuleConf(module, file);
+    if (conf.dbtype !== "mssql") {
+      return false;
+    }
+
+    if (/.+\.sql$/i.test(file.filename)) {
+      await createConnection(conf);
       return true;
     }
     return false;
   };
 
-  const createConnection = async (module, file) => {
-    const defaultConf = {
-      host: "localhost",
-      port: 1433,
-      user: "sa",
-      password: "12345",
-      database: module.dbname,
-      enableArithAbort: true,
-    };
-
-    const userConf = getUserConf(module, file, "mssql");
-    const conf = { ...defaultConf, ...userConf };
+  const createConnection = async (conf) => {
     const { host, port, user, password, database } = conf;
-
     const connectionStr = `mssql://${user}:${password}@${host}:${port}/${database}`;
     await mssql.connect(connectionStr);
     console.log(`[INFO] MSSQL Server connection successfully established`);
@@ -175,23 +151,18 @@ const mssqlHandler = (function () {
 =====================================*/
 const serviceHandler = (function () {
   const accept = async (module, file) => {
+    const conf = getModuleConf(module, file);
     if (/.+\.svc$/i.test(file.filename)) {
-      await createConnection(module, file);
+      await createConnection(module, file, conf);
       return true;
     }
     return false;
   };
 
-  const createConnection = async (module, file) => {
-    const defaultConf = {
-      host: "localhost:8070",
-      cluster: "osiris3",
-      context: "etracs25",
-    };
-
-    const userConf = getUserConf(module, file, "svc");
-    const conf = { ...defaultConf, ...userConf };
-    const { host, cluster, context, service } = conf;
+  const createConnection = async (module, file, conf) => {
+    const host = conf.app_server;
+    const cluster = conf.app_cluster;
+    const context = conf.app_context;
 
     this.url = `http://${host}/${cluster}/json/${context}`;
     console.log(`[INFO] Service connection initialized`);
@@ -254,7 +225,7 @@ const getHandler = async (module, file) => {
       return handler;
     }
   }
-  throw `Handler for file ${file} is not registered.`;
+  throw `Handler for file ${file.filename} is not registered.`;
 };
 
 module.exports = {

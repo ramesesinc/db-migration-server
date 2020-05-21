@@ -1,0 +1,3 @@
+MigrationTestService.migrate01;
+MigrationTestService.migrate02;
+#MigrationTestService.migrateWithError;

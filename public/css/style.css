@@ -77,15 +77,6 @@ h3 {
     width: 45%;
 }
 
-#preview {
-    height: 97%;
-    max-height: 97%;
-    border: 1px solid #eee;
-    overflow-y: scroll;
-    width: 60%;
-    padding: 10px;
-}
-
 pre {
     white-space: pre-wrap;       /* css-3 */
     white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */

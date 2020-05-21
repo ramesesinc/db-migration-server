@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useLocation, useHistory } from "react-router-dom";
 import Button from "@material-ui/core/Button";
 import Container from "@material-ui/core/Container"
-import EditIcon from "@material-ui/icons/Edit";
+import SettingsIcon from "@material-ui/icons/Settings";
 import Toolbar from "@material-ui/core/Toolbar";
 
 import Action from "../components/Action";
@@ -22,6 +22,7 @@ const ModuleScreen = (props) => {
   const [module, setModule] = useState(initialModule);
   const [moduleFiles, setModuleFiles] = useState([]);
   const [deploying, setDeploying] = useState(false);
+  const [reloading, setReloading] = useState(false);
   const [error, setError] = useState();
   const [confirmDeploy, setConfirmDeploy] = useState(false);
 
@@ -39,9 +40,9 @@ const ModuleScreen = (props) => {
   }, []);
 
   let history = useHistory();
-  const editHandler = () => {
+  const settingHandler = () => {
     history.push({
-      pathname: `/modules/${module.name}/edit`,
+      pathname: `/modules/${module.name}/setting`,
       state: { module },
     });
   };
@@ -72,14 +73,15 @@ const ModuleScreen = (props) => {
     setConfirmDeploy(false);
   }
 
+  console.log("RELOADING", reloading);
 
   const ModuleActions = (
     <Toolbar variant="dense">
       <Action
-        title="Edit"
+        title="Settings"
         color="primary"
-        onClick={editHandler}
-        startIcon={<EditIcon />}
+        onClick={settingHandler}
+        startIcon={<SettingsIcon />}
       />
     </Toolbar>
   );
@@ -129,7 +131,7 @@ const ModuleScreen = (props) => {
         <Container>
           <Label caption="Name:" width="300px" value={module.name} />
           <Label caption="Database:" value={module.dbname} />
-          <Label caption="Conf (json):" value={conf} />
+          {/* <Label caption="Conf (json):" value={conf} /> */}
         </Container>
         {fileActions}
         <ModuleFiles files={moduleFiles} />

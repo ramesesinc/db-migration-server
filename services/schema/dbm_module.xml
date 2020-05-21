@@ -1,0 +1,8 @@
+<schema>
+    <element tablename="dbm_module">
+        <field name="name" primary="true" />
+        <field name="dbname" required="true" />
+        <field name="conf" required="true" type="json" />
+        <field name="lastfileid" />
+    </element>
+</schema>

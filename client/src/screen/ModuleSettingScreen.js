@@ -5,8 +5,7 @@ import { makeStyles } from "@material-ui/core/styles";
 import TextField from "@material-ui/core/TextField";
 import TextareaAutosize from "@material-ui/core/TextareaAutosize";
 import Toolbar from "@material-ui/core/Toolbar";
-import CancelIcon from "@material-ui/icons/Cancel";
-import SaveIcon from "@material-ui/icons/Save";
+import BackIcon from "@material-ui/icons/ArrowBack";
 
 import Action from "../components/Action";
 import Content from "../components/Content";
@@ -28,12 +27,12 @@ const useStyles = makeStyles((theme) => ({
   button: {
     margin: theme.spacing(1),
   },
-  formInfoContainer : {
+  formInfoContainer: {
     marginLeft: 15,
     marginRight: 15,
     display: "flex",
     flexDirection: "column",
-  }
+  },
 }));
 
 const formatConf = (conf) => {
@@ -41,7 +40,7 @@ const formatConf = (conf) => {
   return jsonFormat(conf, { type: "space", size: 2 });
 };
 
-const ModuleEditScreen = (props) => {
+const ModuleSettingScreen = (props) => {
   const initialModule = useLocation().state.module;
   const [module, setModule] = useState(initialModule);
   const [confStr, setConfStr] = useState(formatConf(initialModule.conf));
@@ -49,27 +48,7 @@ const ModuleEditScreen = (props) => {
 
   const classes = useStyles();
 
-  const inputChangeHandler = (evt) => {
-    const { id, value } = evt.target;
-    if (id === "conf") {
-      try {
-        setConfError(null);
-        const jsonValue = JSON.parse(value);
-        setModule((prevModule) => {
-          return { ...prevModule, [id]: jsonValue };
-        });
-      } catch (err) {
-        setConfError("Invalid json value.");
-      }
-      setConfStr(value);
-    } else {
-      setModule((prevModule) => {
-        return { ...prevModule, [id]: value };
-      });
-    }
-  };
-
-  const cancelHandler = () => {
+  const backHandler = () => {
     history.replace({
       pathname: `/modules/${module.name}`,
       state: { module: initialModule },
@@ -87,32 +66,25 @@ const ModuleEditScreen = (props) => {
     });
   };
 
-  const Actions = (
-    <Toolbar variant="dense" disableGutters={true}>
-      <Action
-        title="Cancel"
-        onClick={cancelHandler}
-        startIcon={<CancelIcon />}
-      />
-      <Action
-        title="Save"
-        type="submit"
-        color="primary"
-        startIcon={<SaveIcon />}
-      />
+  const ModuleActions = (
+    <Toolbar variant="dense">
+      <Action title="Back" onClick={backHandler} startIcon={<BackIcon />} />
     </Toolbar>
   );
 
+
   return (
     <Page>
-      <Content title={`Module: ${module.name}`}>
+      <Content
+        title={`Module: ${module.name}`}
+        ActionComponents={ModuleActions}
+      >
         <form
           className={classes.root}
           noValidate
           autoComplete="off"
           onSubmit={submitHandler}
         >
-          {Actions}
           <div className={classes.formInfoContainer}>
             <TextField
               id="name"
@@ -125,9 +97,9 @@ const ModuleEditScreen = (props) => {
               label="Database Name"
               required
               value={module.dbname}
-              onChange={(event) => inputChangeHandler(event)}
+              InputProps={{ readOnly: true }}
             />
-            <Error text={confError}/>
+            <Error text={confError} />
             <TextareaAutosize
               id="conf"
               aria-label="minimum height"
@@ -135,7 +107,6 @@ const ModuleEditScreen = (props) => {
               multiline
               rows={15}
               value={confStr}
-              onChange={(event) => inputChangeHandler(event)}
             />
           </div>
         </form>
@@ -144,4 +115,4 @@ const ModuleEditScreen = (props) => {
   );
 };
 
-export default ModuleEditScreen;
+export default ModuleSettingScreen;

@@ -1,0 +1,11 @@
+<schema>
+    <element tablename="dbm_migration">
+        <field name="parentid" primary="true" />
+        <field name="filename" primary="true" />
+        <field name="state" type="integer" required="true" />
+        <field name="dtfiled" type="date" required="true" />
+        <field name="modulename" />
+        <field name="errors" />
+        <field name="file" />
+    </element>
+</schema>

@@ -1,0 +1,8 @@
+<schema>
+    <element tablename="entity">
+        <field name="objid" primary="true" prefix="E" />
+        <field name="state" required="true" default="DRAFT" />
+        <field name="entityno" required="true" />
+        <field name="name" required="true" />
+    </element>
+</schema>

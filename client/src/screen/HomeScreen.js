@@ -40,7 +40,6 @@ const HomeScreen = (props) => {
 
   useEffect(() => {
     try {
-      console.log("useeffect getmodules ")
       getModules();
     } catch (err) {
       console.log(err);

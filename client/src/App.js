@@ -4,7 +4,7 @@ import "./App.css";
 
 import HomeScreen from "./screen/HomeScreen"
 import ModuleScreen from "./screen/ModuleScreen"
-import ModuleEditScreen from "./screen/ModuleEditScreen"
+import ModuleSettingScreen from "./screen/ModuleSettingScreen"
 
 function App() {
   return (
@@ -14,14 +14,11 @@ function App() {
           <Route exact path="/">
             <HomeScreen />
           </Route>
-          <Route path="/admin">
-            <HomeScreen />
-          </Route>
           <Route exact path="/modules/:moduleId">
             <ModuleScreen />
           </Route>
-          <Route path="/modules/:moduleId/edit">
-            <ModuleEditScreen />
+          <Route path="/modules/:moduleId/setting">
+            <ModuleSettingScreen />
           </Route>
         </Switch>
       </div>

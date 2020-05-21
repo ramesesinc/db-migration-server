@@ -45,14 +45,21 @@ router.get("/reload", async (req, res) => {
   return await getModules(res);
 });
 
+router.get("/reload/:moduleName", async (req, res) => {
+  const { moduleName } = req.params;
+  await api.reloadModule(moduleName);
+  const module = await api.getModule(moduleName);
+  res.json(module);
+});
+
 router.get("/modules", async (req, res) => {
   return await getModules(res);
 });
 
-router.get("/modules/:moduleId", async (req, res) => {
+router.get("/modules/:moduleName", async (req, res) => {
   try {
-    const { moduleId } = req.params;
-    const module = await api.getModule(moduleId)
+    const { moduleName } = req.params;
+    const module = await api.getModule(moduleName)
     const files = await api.getModuleFiles(module);
     res.json(files);
   } catch (err) {

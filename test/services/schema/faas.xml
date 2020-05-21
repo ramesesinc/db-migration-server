@@ -1,0 +1,8 @@
+<schema>
+    <element tablename="faas">
+        <field name="objid" primary="true" prefix="E" />
+        <field name="state" required="true" default="DRAFT" />
+        <field name="tdno" required="true" />
+        <field name="fullpin" required="true" />
+    </element>
+</schema>

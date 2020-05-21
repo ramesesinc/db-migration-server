@@ -30,7 +30,7 @@ const Header = (props) => {
   const classes = useStyles();
   const history = useHistory();
   const homeHandler = () => {
-    history.replace("/admin");
+    history.replace("/");
   };
 
   return (
