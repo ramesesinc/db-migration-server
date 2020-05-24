@@ -4,5 +4,6 @@
         <field name="dbname" required="true" />
         <field name="conf" required="true" type="json" />
         <field name="lastfileid" />
+        <field name="version" type="decimal" />
     </element>
 </schema>

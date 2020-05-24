@@ -1,0 +1,6 @@
+<schema>
+    <element tablename="business_application">
+        <field name="objid" primary="true" prefix="BA" />
+        <field name="name" required="true" />
+    </element>
+</schema>

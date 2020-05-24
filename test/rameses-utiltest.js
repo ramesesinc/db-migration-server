@@ -4,10 +4,10 @@ const api = require("../api/rameses-db-migration");
 
 const rootDir = path.join(__dirname, "dbm-root");
 
-afterAll(() => {
-  console.log("afterAll")
-  api.closeCache();
-});
+// afterAll(() => {
+//   console.log("afterAll")
+//   api.closeCache();
+// });
 
 describe("DB Migration", () => {
   test("should load single level module", async () => {
