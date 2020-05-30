@@ -1,165 +1,109 @@
 const fs = require("fs");
-const mysql = require("mysql");
-const mssql = require("mssql");
 const fetch = require("node-fetch");
+const { getProvider } = require("../lib/persistence");
 
+class Handler {
+  constructor() {
+    this._provider = null;
+  }
 
-const getModuleConf = (module, file) => {
-  if (file.modulename) {
-    return file.conf;
-  } 
-  return module.conf;
+  getModuleConf(module, file) {
+    if (file.modulename) {
+      return file.conf;
+    } 
+    return module.conf;
+  }
+
+  async accept(module, file) {
+    return false;
+  }
+
+  async execute(sql, values=[]) {
+    if (this._provider) {
+      return await this._provider.execute(sql, values);
+    }
+  }
+
+  async handle(module, file, callback) {
+    const sqlFile = fs.readFileSync(file.file).toString();
+    const sqls = sqlFile.split(/;$/gim);
+    let hasError = false;
+    for (let i = 0; i < sqls.length; i++) {
+      const sql = sqls[i].trim();
+      if (sql.length > 0 && !sql.startsWith("#")) {
+        try {
+          await this.execute(sql);
+          await callback({status: "OK", module, file});
+        } catch (error) {
+          hasError = true;
+          await callback({status: "ERROR", error: error, module, file});
+          break;
+        }
+      }
+    }
+    await callback({status: "DONE", module, file});
+    if (hasError) {
+      throw `Encountered an error while processing ${module.name}`;
+    }
+  };
+
+  async close() {
+    if (this._provider) {
+      await this._provider.close();
+    }
+  }
 }
 
 /*=====================================
 * MYSQL Handler
 =====================================*/
-const mysqlHandler = (function () {
-  this.pool;
-
-  const accept = async (module, file) => {
-    const conf = getModuleConf(module, file);
+class MySqlHandler extends Handler {
+  async accept(module, file) {
+    const conf = this.getModuleConf(module, file);
     if (conf.dbtype !== "mysql") {
       return false;
     }
-
     if (/.+\.sql$/i.test(file.filename)) {
-      await createPool(module, file, conf);
+      this._provider = await getProvider(null, conf);
       return true;
     }
     return false;
-  };
+  }
+}
 
-  const createPool = async (module, file, conf) => {
-    conf.connectionLimit = conf.poolSize || 10;
-    this.pool = mysql.createPool(conf);
-  };
-
-  const close = async () => {
-    this.pool.end((err) => {
-      if (err) {
-        console.log("Error closing connecton pool. ", err.stack);
-        return;
-      }
-      console.log("Pool connections closed.");
-    });
-  };
-
-  const query = (sql, values = []) => {
-    return new Promise((resolve, reject) => {
-      this.pool.query(
-        { sql, values, timeout: this.timeout},
-        (error, results, fields) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve([results, fields]);
-          }
-        }
-      );
-    });
-  };
-
-  const execute = async (module, file, callback) => {
-    const sqlFile = fs.readFileSync(file.file).toString();
-    const sqls = sqlFile.split(/;$/gim);
-    for (let i = 0; i < sqls.length; i++) {
-      const sql = sqls[i].trim();
-      if (sql.length > 0 && !sql.startsWith("#")) {
-        try {
-          await query(sql);
-          await callback({status: "OK"}, file);
-        } catch (error) {
-          await callback({status: "ERROR", error: error.sqlMessage}, file);
-          throw error;
-        }
-      }
-    }
-    await callback("DONE", file);
-  };
-
-  return {
-    accept,
-    close,
-    execute,
-    query,
-  };
-})();
 
 /*=====================================
 * MSSQL Handler
 =====================================*/
-const mssqlHandler = (function () {
-  const accept = async (module, file) => {
-    const conf = getModuleConf(module, file);
+class MsSqlHandler extends Handler {
+  async accept(module, file) {
+    const conf = this.getModuleConf(module, file);
     if (conf.dbtype !== "mssql") {
       return false;
     }
 
     if (/.+\.sql$/i.test(file.filename)) {
-      await createConnection(conf);
+      this._provider = await getProvider(null, conf);
       return true;
     }
     return false;
   };
-
-  const createConnection = async (conf) => {
-    const { host, port, user, password, database } = conf;
-    const connectionStr = `mssql://${user}:${password}@${host}:${port}/${database}`;
-    await mssql.connect(connectionStr);
-    console.log(`[INFO] MSSQL Server connection successfully established`);
-  };
-
-  const close = async () => {
-    //
-  };
-
-  const query = async (sql, values = []) => {
-    const result = await mssql.query(sql);
-    const { recordsets } = result;
-    return [recordsets, []];
-  };
-
-  const execute = async (module, file, callback) => {
-    const sqlFile = fs.readFileSync(file.file).toString();
-    const sqls = sqlFile.split(/;$/gim);
-    for (let i = 0; i < sqls.length; i++) {
-      const sql = sqls[i].trim();
-      if (sql.length > 0 && !sql.startsWith('#')) {
-        try {
-          await query(sql);
-          await callback({status: "OK"}, file);
-        } catch (error) {
-          await callback({status: "ERROR", error}, file);
-          throw error;
-        }
-      }
-    }
-    await callback("DONE", file);
-  };
-
-  return {
-    accept,
-    close,
-    execute,
-    query,
-  };
-})();
+}
 
 /*=====================================
 * Service Handler
 =====================================*/
-const serviceHandler = (function () {
-  const accept = async (module, file) => {
-    const conf = getModuleConf(module, file);
+class ServiceHandler extends Handler {
+  async accept(module, file) {
+    const conf = this.getModuleConf(module, file);
     if (/.+\.svc$/i.test(file.filename)) {
-      await createConnection(module, file, conf);
+      this.createConnection(module, file, conf);
       return true;
     }
     return false;
   };
 
-  const createConnection = async (module, file, conf) => {
+  createConnection (module, file, conf) {
     const host = conf.app_server;
     const cluster = conf.app_cluster;
     const context = conf.app_context;
@@ -169,11 +113,7 @@ const serviceHandler = (function () {
     console.log(`[INFO]    ${this.url}`);
   };
 
-  const close = async () => {
-    //
-  };
-
-  const invokeService = async (service) => {
+  async invokeService(service) {
     const serviceUrl = `${this.url}/${service}`;
     const res = await fetch(serviceUrl);
     if (res.ok) {
@@ -190,32 +130,30 @@ const serviceHandler = (function () {
     }
   };
 
-  const execute = async (module, file, callback) => {
+  async handle(module, file, callback) {
     const serviceFile = fs.readFileSync(file.file).toString();
     const services = serviceFile.split(/;$/gim);
     for (let i = 0; i < services.length; i++) {
       const service = services[i].trim();
       if (service.length > 0 && !service.startsWith("#")) {
         try {
-          await invokeService(service);
-          await callback({status: "OK"}, file);
+          await this.invokeService(service);
+          await callback({status: "OK", module, file});
         } catch (error) {
-          await callback({status: "ERROR", error }, file);
-          throw error;
+          await callback({status: "ERROR", error, module, file });
+          break;
         }
       }
     }
-    await callback("DONE", file);
-  };
+    await callback({status: "DONE", module, file});
+  }
+}
 
-  return {
-    accept,
-    close,
-    execute,
-  };
-})();
-
-const handlers = [mysqlHandler, mssqlHandler, serviceHandler];
+const handlers = [
+  new MySqlHandler(), 
+  new MsSqlHandler(), 
+  new ServiceHandler()
+];
 
 const getHandler = async (module, file) => {
   for (let i = 0; i < handlers.length; i++) {

@@ -1,11 +1,11 @@
 const path = require("path");
 
-const db = require("../lib/database");
+const db = require("../lib/persistence");
 
 const createModule = async () => {
   const conf = {
     dbtype: "mysql",
-    host: "192.168.1.8",
+    host: "localhost",
     database: "dbm",
   };
   try {

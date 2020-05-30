@@ -11,12 +11,10 @@ const http = require("http").createServer(app);
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-
 /* setup client */
 const clientBuildPath = path.join("client", "build");
 app.use(express.static(path.join(__dirname, clientBuildPath)));
 app.use(express.static("public"));
-
 
 /* migration routes */
 const dbmigrations = require("./routes/dbmigrations");
@@ -25,7 +23,6 @@ app.use("/dbmigrations", dbmigrations);
 app.get("/*", (req, res) => {
   res.sendFile(path.join(__dirname, clientBuildPath, "index.html"));
 });
-
 
 /* initalize migration services */
 const db = require("./api/rameses-db-migration");

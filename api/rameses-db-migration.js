@@ -1,27 +1,22 @@
 const path = require("path");
-const fs = require("fs");
-
 const { getHandler } = require("./rameses-migration-handlers");
-const { parseEnvFile, log, scanFiles } = require("./rameses-util");
-const { getProvider } = require("./rameses-db-providers");
-const em = require("./rameses-persistence");
+const { parseEnvFile, log, scanFiles } = require("../lib/util");
+const em = require("../lib/persistence");
 
-let provider;
 let moduleEm;
 let migrationEm;
 
-const setProvider = async (dbmConf) => {
-  provider = await getProvider(dbmConf.type, dbmConf);
-  moduleEm = em.persistence(provider, "dbm_module");
-  migrationEm = em.persistence(provider, "dbm_migration");
+const initDbmPersistence = async (dbmConf) => {
+  moduleEm = await em.persistence("dbm_module", dbmConf);
+  migrationEm = await em.persistence("dbm_migration", dbmConf);
 };
 
-const buildConfFromEnv = files => {
+const buildConfFromEnv = (files) => {
   if (files.length === 0) {
     return {};
   }
 
-  const envFile = files.find(f => /env\.conf/.test(f.file));
+  const envFile = files.find((f) => /env\.conf/.test(f.file));
   const env = parseEnvFile(path.join(envFile.dir, envFile.file));
   const conf = {
     dbtype: env.db_type,
@@ -30,14 +25,14 @@ const buildConfFromEnv = files => {
     user: env.db_user,
     password: env.db_pass,
     database: env.db_name,
-  }
+  };
   if (env.app_server) {
     conf.app_server = env.app_server;
     conf.app_cluster = env.app_cluster;
     conf.app_context = env.app_context;
   }
   return conf;
-}
+};
 
 const createModule = async ({ file, fileid, dir, files }) => {
   const conf = buildConfFromEnv(files);
@@ -79,7 +74,7 @@ const reloadModule = async (moduleName) => {
   if (moduleFiles) {
     loadModule(moduleFiles[0]);
   }
-}
+};
 
 const loadModules = async () => {
   const dbmRoot = global.gConfig.dbm_root;
@@ -89,9 +84,8 @@ const loadModules = async () => {
   }
 };
 
-
 const updateModule = async (module) => {
-  await moduleEm.update(module);
+  await moduleEm.updateEntity(module);
   return module;
 };
 
@@ -115,11 +109,13 @@ const createMigrationFile = async (module, submodule, file) => {
     state: 0,
   };
   await migrationEm.create(migrationFile);
-  log.info(`${module.fileid || module.name} file: ${migrationFile.filename} saved.`);
+  log.info(
+    `${module.fileid || module.name} file: ${migrationFile.filename} saved.`
+  );
 };
 
 const saveMigrationFiles = async (module, submodule, files) => {
-  const migrationFiles = files.filter(f => !f.file.endsWith(".conf"))
+  const migrationFiles = files.filter((f) => !f.file.endsWith(".conf"));
   for (let i = 0; i < migrationFiles.length; i++) {
     const file = migrationFiles[i];
     const fileSaved = await isFileSaved(module, file);
@@ -138,7 +134,7 @@ const getModule = (name) => {
 };
 
 const updateFile = (file) => {
-  return migrationEm.update(file)
+  return migrationEm.updateEntity(file);
 };
 
 const sort = (list, field) => {
@@ -165,13 +161,13 @@ const getModuleFiles = async (module) => {
     .list();
 
   const moduleNames = [...new Set(files.map((file) => file.modulename))];
-  const list = moduleNames.map(mn => {
-    return {modulename: mn, name: mn || module.name, files: []}
+  const list = moduleNames.map((mn) => {
+    return { modulename: mn, name: mn || module.name, files: [] };
   });
 
-  list.forEach(item => {
-    item.files = files.filter(f => f.modulename === item.modulename);
-  })
+  list.forEach((item) => {
+    item.files = files.filter((f) => f.modulename === item.modulename);
+  });
 
   return list;
 };
@@ -188,9 +184,9 @@ const buildModules = async () => {
 };
 
 const getModuleFileConf = async (file) => {
-  let conf = {}
+  let conf = {};
   if (file.modulename) {
-    const module = await moduleEm.read({name: file.modulename});
+    const module = await moduleEm.read({ name: file.modulename });
     if (module) {
       conf = module.conf;
     }
@@ -198,27 +194,11 @@ const getModuleFileConf = async (file) => {
   return conf;
 };
 
-const updateStatusCallback = async (status, file) => {
-  if (status === "OK") {
-    module.lastfileid = file.filename;
-    await updateModule(module);
-  } else if (status === "DONE") {
-    module.lastfileid = file.filename;
-    await updateModule(module);
-    file.state = 1;
-    await updateFile(file);
-  } else {
-    file.errors = status.error;
-    file.state = 1;
-    await updateFile(file);
-  }
-}
-
 const getUnprocessedFiles = async (module) => {
   const files = await migrationEm
-  .where(['parentid = :name AND state = 0', module])
-  .orderBy('modulename,filename')
-  .list();
+    .where(["parentid = :name AND state = 0", module])
+    .orderBy("modulename,filename")
+    .list();
 
   /* build sql and svc files */
   for (let i = 0; i < files.length; i++) {
@@ -226,24 +206,49 @@ const getUnprocessedFiles = async (module) => {
     file.conf = await getModuleFileConf(file);
     file.conf = file.conf || module.conf;
     file.modulename = file.modulename || module.name;
-  };
-  
-  const unprocessedFiles = files.filter(f => f.filename.indexOf("mssql") === -1)
-  const nonMySqlFiles = files.filter(f => f.dbtype === 'mssql' && f.filename.indexOf("mssql") > 0 )
+  }
 
-  const replacements = []
+  const unprocessedFiles = files.filter(
+    (f) => f.filename.indexOf("mssql") === -1
+  );
+  const nonMySqlFiles = files.filter(
+    (f) => f.dbtype === "mssql" && f.filename.indexOf("mssql") > 0
+  );
+
+  const replacements = [];
   nonMySqlFiles.forEach((nf, replacementIdx) => {
-     const name = nf.filename.replace("_mssql.sql","");
-     const idx = unprocessedFiles.findIndex(f => nf.modulename === f.modulename && f.filename.startsWith(name));
-    replacements.push([idx, replacementIdx])
+    const name = nf.filename.replace("_mssql.sql", "");
+    const idx = unprocessedFiles.findIndex(
+      (f) => nf.modulename === f.modulename && f.filename.startsWith(name)
+    );
+    replacements.push([idx, replacementIdx]);
   });
-  
-  replacements.forEach( r => {
+
+  replacements.forEach((r) => {
     unprocessedFiles[r[0]] = nonMySqlFiles[r[1]];
   });
 
   return unprocessedFiles;
-}
+};
+
+const updateStatusCallback = async ({status, error, module, file}) => {
+  if (status === "OK") {
+    module.lastfileid = file.filename;
+    await updateModule(module);
+  } else if (status === "DONE") {
+    file.state = 1;
+    await updateFile(file);
+  } else {
+    if (typeof error === "object") {
+      file.errors = error.toString();
+    } else {
+      file.errors = error;
+    }
+    file.state = 1;
+    console.log("ERROR : ", error)
+    await updateFile(file);
+  }
+};
 
 const buildModule = async (module) => {
   log.info(`Building module ${module.name}`);
@@ -254,7 +259,7 @@ const buildModule = async (module) => {
       file.conf = await getModuleFileConf(file);
       const handler = await getHandler(module, file);
       log.info(`Processing file ${file.filename}`);
-      await handler.execute(module, file, updateStatusCallback);
+      await handler.handle(module, file, updateStatusCallback);
       await handler.close();
     } catch (err) {
       log.err(err);
@@ -298,7 +303,12 @@ const scanModuleFiles = async (dir, parent) => {
   }
 };
 
-const scanModules = async (dir, filter = (file) => {return true}) => {
+const scanModules = async (
+  dir,
+  filter = (file) => {
+    return true;
+  }
+) => {
   const modules = [];
   const files = await scanFiles(dir);
   for (let i = 0; i < files.length; i++) {
@@ -308,23 +318,24 @@ const scanModules = async (dir, filter = (file) => {return true}) => {
       modules.push(module);
       const parentDir = path.join(dir, file.name);
       await scanModuleFiles(parentDir, module);
-    } 
+    }
   }
   return modules;
 };
 
-const initialize = async (servicePath) => {
+const initialize = async (servicePath, conf = {}) => {
   const dbmConf = {
-    type: process.env.dbm_db_type || "mysql",
-    host: process.env.dbm_db_host || "localhost",
-    user: process.env.dbm_db_user || "root",
-    password: process.env.dbm_db_pass || "1234",
-    database: process.env.dbm_db_name || "dbm",
-  }
+    type: process.env.dbm_db_type || conf.type || "mysql",
+    dbtype: process.env.dbm_db_type || conf.type || "mysql",
+    host: process.env.dbm_db_host || conf.host || "localhost",
+    user: process.env.dbm_db_user || conf.user || "root",
+    password: process.env.dbm_db_pass || conf.password || "1234",
+    database: process.env.dbm_db_name || conf.database || "dbm",
+  };
 
   try {
-    await em.loadResources(servicePath);
-    await setProvider(dbmConf);
+    await em.loadServices(servicePath);
+    await initDbmPersistence(dbmConf);
     await loadModules();
   } catch (err) {
     console.log(err);
@@ -342,6 +353,5 @@ module.exports = {
   updateFile,
   updateModule,
   reloadModule,
-  setProvider,
   scanModules,
 };

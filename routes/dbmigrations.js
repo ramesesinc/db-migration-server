@@ -5,7 +5,7 @@ const express = require("express");
 const router = express.Router();
 
 const api = require("../api/rameses-db-migration");
-const util = require("../api/rameses-util");
+const util = require("../lib/util");
 
 
 router.get("/help", async (req, res) => {

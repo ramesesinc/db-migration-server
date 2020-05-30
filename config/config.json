@@ -4,9 +4,8 @@
       "app_name": "db-migration-server",
       "app_desc": "DB Migration Server",
       "node_port": 5000,
-      "redis_url": "redis://localhost:6379",
       "dbm_root": "/home/rameses/dbm-root",
-      "app_server_ip": "192.168.1.6",
+      "app_server_ip": "192.168.1.8",
       "waterworks_db_ip": "192.168.1.7"
   },
   "testing": {
@@ -19,7 +18,6 @@
   "production": {
       "config_id": "production",
       "node_port": 5000,
-      "redis_url": "redis://migration-redis",
       "dbm_root": "/dbm-root"
   }
 }

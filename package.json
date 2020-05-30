@@ -27,7 +27,6 @@
     "xml-js": "^1.6.11"
   },
   "devDependencies": {
-    "jest": "^26.0.1",
     "nodemon": "^2.0.2"
   }
 }
