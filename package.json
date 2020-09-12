@@ -20,7 +20,7 @@
     "lodash": "^4.17.15",
     "mssql": "^6.2.0",
     "mysql": "^2.18.1",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "redis": "^3.0.2",
     "showdown": "^1.9.1",
     "styled-components": "^5.1.0",
